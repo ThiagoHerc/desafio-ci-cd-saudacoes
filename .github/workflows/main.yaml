@@ -71,7 +71,7 @@ jobs:
         context: .
         push: true
         tags: ${{ secrets.DOCKER_USER }}/ms-saudacoes-aleatorias:latest
-deploy:
+  deploy:
     name: Deploy no Koyeb via Terraform
     runs-on: ubuntu-latest
     needs: [release] # Depende do job de release
@@ -93,7 +93,7 @@ deploy:
       working-directory: ./infra
       env:
         KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
-cleanup:
+  cleanup:
     name: Destruir Infraestrutura (Manual)
     runs-on: ubuntu-latest
     needs: [deploy] # Só pode destruir depois de um deploy
