@@ -51,21 +51,68 @@ jobs:
         # A imagem ubuntu-latest já tem o gcc.
         CGO_ENABLED=1 gotestsum --junitfile report.xml --format testname
 
-  build:
-    name: Build Code
+  release:
+    name: Build e Release da Imagem Docker
     runs-on: ubuntu-latest
-    needs:
-    - lint
-    - test
+    needs: [lint, test] # Garante que o lint e os testes passem primeiro
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
+    - name: Login no Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_PASS }}
 
-    - name: Build app
-      run: go build main.go
+    - name: Build e Push da Imagem
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ secrets.DOCKER_USER }}/ms-saudacoes-aleatorias:latest
+deploy:
+    name: Deploy no Koyeb via Terraform
+    runs-on: ubuntu-latest
+    needs: [release] # Depende do job de release
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
 
-    
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./infra # Indica onde os arquivos .tf estão
+      env:
+        KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
+      working-directory: ./infra
+      env:
+        KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+cleanup:
+    name: Destruir Infraestrutura (Manual)
+    runs-on: ubuntu-latest
+    needs: [deploy] # Só pode destruir depois de um deploy
+    environment: production # << ISSO FAZ A MÁGICA
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+
+    - name: Terraform Init
+      run: terraform init
+      working-directory: ./infra
+      env:
+        KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+
+    - name: Terraform Destroy
+      run: terraform destroy -auto-approve
+      working-directory: ./infra
+      env:
+        KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}    
