@@ -30,7 +30,6 @@ jobs:
       with:
         version: v1.58
         args: --verbose
-  
   test:
     name: Test Code
     runs-on: ubuntu-latest
