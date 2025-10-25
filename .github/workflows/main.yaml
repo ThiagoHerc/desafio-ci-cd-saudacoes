@@ -19,7 +19,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24.4' # Usando a sua sugestão
+        go-version: '1.24.4' # Versão padronizada
     
     - name: Go Fmt & Vet
       run: |
@@ -31,19 +31,8 @@ jobs:
       run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
     - name: Run golangci-lint
-      run: golangci-lint run --verbose  
-    
-    - name: Go Fmt & Vet
-      run: |
-        echo "Linting code..."
-        go fmt $(go list ./...)
-        go vet $(go list ./...)
-
-    - name: Run golangci-lint
-      uses: golangci/golangci-lint-action@v6
-      with:
-        version: v1.58
-        args: --verbose
+      run: golangci-lint run --verbose
+  
   test:
     name: Test Code
     runs-on: ubuntu-latest
@@ -54,16 +43,14 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24.4'    
-
+        go-version: '1.24.4' # Versão padronizada
+    
     - name: Install gotestsum
       run: go install gotest.tools/gotestsum@latest
 
     - name: Run tests and generate report
       run: |
         echo "Running tests and generating report..."
-        # CGO_ENABLED=1 é necessário se houver código C, mas requer gcc.
-        # A imagem ubuntu-latest já tem o gcc.
         CGO_ENABLED=1 gotestsum --junitfile report.xml --format testname
 
   release:
@@ -86,6 +73,7 @@ jobs:
         context: .
         push: true
         tags: ${{ secrets.DOCKER_USER }}/ms-saudacoes-aleatorias:latest
+
   deploy:
     name: Deploy no Koyeb via Terraform
     runs-on: ubuntu-latest
@@ -108,6 +96,7 @@ jobs:
       working-directory: ./infra
       env:
         KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+
   cleanup:
     name: Destruir Infraestrutura (Manual)
     runs-on: ubuntu-latest
@@ -130,4 +119,4 @@ jobs:
       run: terraform destroy -auto-approve
       working-directory: ./infra
       env:
-        KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}    
+        KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
