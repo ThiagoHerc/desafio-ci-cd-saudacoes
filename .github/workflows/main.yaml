@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
- lint:
+  lint:
     name: Lint Code
     runs-on: ubuntu-latest
     steps:
